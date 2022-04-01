@@ -1,0 +1,444 @@
+*&---------------------------------------------------------------------*
+*& Report ZONLINE
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zonline.
+DATA: it_newuser TYPE TABLE OF zonline_newuser,
+      wa_newuser TYPE zonline_newuser,
+      wa1        TYPE zonline_newuser,
+      wa2        TYPE zonline_admin,
+      wa_q       TYPE zonline_q,
+      wa3        TYPE zonline_q,
+      wa_r       TYPE zonline_result,
+      it_r       TYPE zonline_result,
+      a(1)       TYPE i,
+      b(1)       TYPE i,
+      d(1)       TYPE i,
+      answer1(1) TYPE c,
+      marks(3)   TYPE i,
+      answer(3)  TYPE c,
+      tmarks(3)  TYPE i.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0001  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0001 OUTPUT.
+  SET PF-STATUS 'ZONLINE'.
+  SET TITLEBAR 'ZONLINE'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0001  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0001 INPUT.
+  CASE sy-ucomm."on_click
+    WHEN 'HOME'.
+      CLEAR: wa_newuser.
+      CALL SCREEN 0003.
+    WHEN 'LOGIN'.
+*      BREAK-POINT.
+      IF wa_newuser-user_name = ' ' AND wa_newuser-password = '  '.
+        MESSAGE 'Fill out the required details.' TYPE 'E'.
+      ENDIF.
+      SELECT SINGLE * FROM zonline_newuser INTO wa1 WHERE user_name = wa_newuser-user_name.
+      IF wa1 IS NOT INITIAL.
+        IF wa1-password = wa_newuser-password.
+          CALL SCREEN 0012.
+        ELSE.
+          MESSAGE 'Incorrect password.' TYPE 'E' DISPLAY LIKE 'E'.
+        ENDIF.
+      ENDIF.
+      SELECT SINGLE * FROM zonline_admin INTO wa2 WHERE admin_id = wa_newuser-user_name.
+      IF wa2 IS NOT INITIAL.
+        IF wa2-admin_pwd = wa_newuser-password.
+          CALL SCREEN 0005.
+        ELSE.
+          MESSAGE 'Incorrect password.' TYPE 'E' DISPLAY LIKE 'E'.
+        ENDIF.
+      ELSE.
+        MESSAGE 'User does not exist.' TYPE 'E'.
+      ENDIF.
+    WHEN 'RESET'.
+      CLEAR : wa_newuser.
+      MODIFY SCREEN.
+  ENDCASE.
+ENDMODULE.
+MODULE status_0002 OUTPUT.
+  SET PF-STATUS 'ZONLINE'.
+  SET TITLEBAR 'ZONLINE'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0002  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0002 INPUT.
+  CASE sy-ucomm."on_click
+    WHEN 'HOME'.
+      CLEAR: wa_newuser.
+      LEAVE TO SCREEN 0003.
+    WHEN 'SAVE'.
+      IF wa_newuser-user_name = '  ' AND wa_newuser-password = '  '.
+        MESSAGE 'Fill out the required details.' TYPE 'E' DISPLAY LIKE 'E'.
+        b = 1.
+      ENDIF.
+      IF b = 0.
+        SELECT * FROM zonline_newuser INTO TABLE it_newuser.
+        LOOP AT it_newuser INTO wa1.
+          IF  wa_newuser-user_name = wa1-user_name.
+            MESSAGE 'User already exists.' TYPE 'E' DISPLAY LIKE 'E'.
+            a = 1.
+            EXIT.
+          ENDIF.
+        ENDLOOP.
+        IF a = 0.
+          MODIFY zonline_newuser FROM wa_newuser.
+          IF sy-subrc = 0.
+            MESSAGE 'User created.' TYPE 'S' DISPLAY LIKE 'S'.
+            LEAVE TO SCREEN 0001.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+    WHEN 'RESET'.
+      CLEAR: wa_newuser.
+      MODIFY SCREEN.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0003  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0003 OUTPUT.
+  SET PF-STATUS 'ZONLINE'.
+  SET TITLEBAR 'ZONLINE'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0003  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0003 INPUT.
+  CASE sy-ucomm."on_click
+    WHEN 'NEW_USER'.
+      CALL SCREEN 0002.
+    WHEN 'EXISTING_USER'.
+      CALL SCREEN 0001.
+
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0004  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0004 INPUT.
+  CASE sy-ucomm.
+    WHEN 'TAKE_EXAM'.
+*      SELECT SINGLE * FROM zonline_result INTO wa_r WHERE user_name = wa_newuser-user_name AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic
+*AND q_no = 1.
+*      IF wa_r IS NOT INITIAL.
+*        MESSAGE 'NO ATTEMPTS REMAINING' TYPE 'E'.
+*      ELSE.
+      wa_q-q_no = 1.
+      SELECT SINGLE * FROM zonline_q INTO wa_q WHERE topic = wa_q-topic AND sub_topic = wa_q-sub_topic AND q_no = 1.
+*        ENDSELECT.
+      CALL SCREEN 0009.
+*      ENDIF.
+*    ENDSELECT.
+*    WHEN 'RESET'.
+*      CLEAR: wa_q.
+*      MODIFY SCREEN.
+*        WA_Q-TOPIC = '   '.
+*        WA_Q-SUB_TOPIC = '   '.
+*    WHEN 'VIEW_RESULT'.
+*      SELECT * FROM zonline_result INTO wa_r WHERE user_name = wa_newuser-user_name AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic  AND q_no= 1.
+*        IF wa_r IS INITIAL.
+*          MESSAGE 'TEST NOT ATTEMPTED' TYPE 'E'.
+*        ELSE.
+*          wa_q-q_no = 1.
+*          SELECT SINGLE * FROM zonline_q INTO wa_q WHERE topic = wa_q-topic AND sub_topic = wa_q-sub_topic AND q_no = 1.
+*          SELECT SINGLE * FROM zonline_result INTO wa_r WHERE user_name = wa_newuser-user_name AND topic = wa_q-topic AND sub_topic =
+*wa_q-sub_topic AND q_no = 1..
+**      answer1 = wa_r-answer.
+*          CALL SCREEN 0011.
+*        ENDIF.
+*      ENDSELECT.
+*        ENDSELECT.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0005  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0005 OUTPUT.
+  SET PF-STATUS 'ZONLINE'.
+*  SET TITLEBAR 'ZONLINE'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0005  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0005 INPUT.
+  CASE sy-ucomm.
+    WHEN 'HOME'.
+      CLEAR: wa_newuser.
+      CALL SCREEN 0003.
+    WHEN 'NEXT'.
+      CALL SCREEN 0006.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0006  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0006 INPUT.
+  CASE sy-ucomm.
+    WHEN 'LOGOUT'.
+      CLEAR: wa_newuser, wa_q.
+      CALL SCREEN 0003.
+    WHEN 'VIEW_QUESTIONS'.
+      IF wa_q-topic = ' ' OR wa_q-sub_topic = ' '.
+        MESSAGE 'Fill out the required details.' TYPE 'E'.
+      ENDIF.
+      SELECT SINGLE * FROM zonline_q INTO wa3 WHERE topic = wa_q-topic AND sub_topic = wa_q-sub_topic AND q_no = 1.
+      IF wa3 IS INITIAL.
+        MESSAGE 'No questions created.' TYPE 'E'.
+      ENDIF.
+      wa_q-q_no = 1.
+      SELECT SINGLE * FROM zonline_q INTO wa_q WHERE topic = wa_q-topic AND sub_topic = wa_q-sub_topic AND q_no = 1.
+      CALL SCREEN 0008.
+    WHEN 'CREATE_QUESTIONS'.
+      IF wa_q-topic = ' ' OR wa_q-sub_topic = ' '.
+        MESSAGE 'Fill out the required details.' TYPE 'E'.
+      ENDIF.
+      MODIFY zonline_q FROM wa_q.
+      IF sy-subrc = 0.
+        MESSAGE 'Topic and Sub-topic created.' TYPE 'S' DISPLAY LIKE 'S'.
+      ENDIF.
+      wa_q-q_no = 1.
+      CALL SCREEN 0007.
+    WHEN 'RESET'.
+      CLEAR: wa_q.
+      MODIFY SCREEN.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0007  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0007 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      CLEAR: wa_q.
+      CALL SCREEN 0006.
+    WHEN 'SAVE'.
+      MODIFY zonline_q FROM wa_q.
+      IF sy-subrc = 0.
+        MESSAGE 'Question created.' TYPE 'S'.
+      ENDIF.
+      CLEAR: wa_q-q_name, wa_q-a, wa_q-b, wa_q-c, wa_q-d,wa_q-crt_ans, wa_q-q_marks.
+      wa_q-q_no = wa_q-q_no + 1.
+    WHEN 'RESET'.
+      CLEAR: wa_q-q_name, wa_q-a, wa_q-b, wa_q-c, wa_q-d,wa_q-crt_ans, wa_q-q_marks.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0008  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE  user_command_0008 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      CLEAR: wa_q.
+      CALL SCREEN 0006.
+    WHEN 'NEXT'.
+      wa_q-q_no = wa_q-q_no + 1.
+      SELECT SINGLE * FROM zonline_q INTO wa_q WHERE q_no = wa_q-q_no AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic.
+      IF sy-subrc = 0.
+        MODIFY SCREEN.
+      ELSE.
+        MESSAGE 'No more questions.' TYPE 'I'.
+        wa_q-q_no = wa_q-q_no - 1.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0006  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0006 OUTPUT.
+  SET PF-STATUS 'ZONLINE'.
+*  SET TITLEBAR 'xxx'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0007  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0007 OUTPUT.
+  SET PF-STATUS 'ZONLINE'.
+*  SET TITLEBAR 'xxx'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0008  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0008 OUTPUT.
+  SET PF-STATUS 'ZONLINE'.
+*  SET TITLEBAR 'xxx'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0009  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0009 INPUT.
+  CASE sy-ucomm.
+    WHEN 'NEXT'.
+      IF  wa_r-answer = wa_q-crt_ans.
+        marks = wa_q-q_marks + marks.
+      ENDIF.
+      wa_r-user_name = wa_newuser-user_name.
+      wa_r-topic = wa_q-topic.
+      wa_r-sub_topic = wa_q-sub_topic.
+      wa_r-q_no = wa_q-q_no.
+      MODIFY zonline_result FROM wa_r.
+      wa_q-q_no = wa_q-q_no + 1.
+      wa_r-answer = '  '.
+      SELECT SINGLE * FROM zonline_q INTO wa_q WHERE q_no = wa_q-q_no AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic.
+      IF sy-subrc = 0.
+        MODIFY SCREEN.
+      ELSE.
+        MESSAGE 'You have completed your exam.' TYPE 'I'.
+        wa_q-q_no = wa_q-q_no - 1.
+      ENDIF.
+    WHEN 'SUBMIT'.
+      IF  wa_r-answer = wa_q-crt_ans.
+        marks = wa_q-q_marks + marks.
+      ENDIF.
+      tmarks = marks.
+      wa_r-user_name = wa_newuser-user_name.
+      wa_r-topic = wa_q-topic.
+      wa_r-sub_topic = wa_q-sub_topic.
+      wa_r-q_no = wa_q-q_no.
+      MODIFY zonline_result FROM wa_r.
+      CALL SCREEN 0010.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0009  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0009 OUTPUT.
+  SET PF-STATUS 'zonline'.
+*  SET TITLEBAR 'xxx'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0010  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0010 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      CLEAR: wa_q, wa_r,marks,tmarks.
+      CALL SCREEN 0013.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0011  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0011 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      CLEAR: wa_q, wa_r.
+      CALL SCREEN 0013.
+    WHEN 'NEXT'.
+      wa_q-q_no = wa_q-q_no + 1.
+      SELECT SINGLE * FROM zonline_result INTO wa_r WHERE user_name = wa_newuser-user_name AND q_no = wa_q-q_no AND topic = wa_q-topic AND sub_topic
+= wa_q-sub_topic.
+      SELECT SINGLE * FROM zonline_q INTO wa_q WHERE q_no = wa_q-q_no AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic.
+      IF sy-subrc = 0.
+        MODIFY SCREEN.
+      ELSE.
+        MESSAGE 'No more questions.' TYPE 'I'.
+        wa_q-q_no = wa_q-q_no - 1.
+        MODIFY SCREEN.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+*sy-datum
+*sy-timlo
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0012  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0012 INPUT.
+  CASE sy-ucomm.
+    WHEN 'NEXT'.
+      CALL SCREEN 0013.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0013  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0013 INPUT.
+  CASE sy-ucomm.
+    WHEN 'LOGOUT'.
+      CLEAR: wa_newuser,wa_q,wa_r,marks,tmarks.
+      CALL SCREEN 0003.
+    WHEN 'VIEW_RESULT'.
+      IF wa_q-topic = ' ' AND wa_q-sub_topic = ' '.
+        MESSAGE 'Fill out the required details.' TYPE 'E'.
+      ENDIF.
+      SELECT SINGLE * FROM zonline_result INTO wa_r WHERE user_name = wa_newuser-user_name AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic
+AND q_no = 1.
+      IF wa_r IS INITIAL.
+        MESSAGE 'Test not attempted.' TYPE 'E'.
+      ELSE.
+        wa_q-q_no = 1.
+        SELECT SINGLE * FROM zonline_q INTO wa_q WHERE topic = wa_q-topic AND sub_topic = wa_q-sub_topic AND q_no = 1.
+        SELECT SINGLE * FROM zonline_result INTO wa_r WHERE user_name = wa_newuser-user_name AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic
+AND q_no = 1.
+        CALL SCREEN 0011.
+      ENDIF.
+    WHEN 'RESET'.
+      CLEAR: wa_q.
+      MODIFY SCREEN.
+    WHEN 'GET_EXAM_ID'.
+      IF wa_q-topic = ' ' OR wa_q-sub_topic = ' '.
+        MESSAGE 'Fill out the required details.' TYPE 'E'.
+      ENDIF.
+      SELECT SINGLE * FROM zonline_q INTO wa3 WHERE topic = wa_q-topic AND sub_topic = wa_q-sub_topic AND q_no = 1 .
+      IF wa3 IS INITIAL.
+        MESSAGE 'Invalid topic or Sub-topic.' TYPE 'E' .
+      ELSE.
+        SELECT SINGLE * FROM zonline_result INTO wa_r WHERE user_name = wa_newuser-user_name AND topic = wa_q-topic AND sub_topic = wa_q-sub_topic
+AND q_no = 1.
+        IF wa_r IS NOT INITIAL.
+          MESSAGE 'No attempts remaining.' TYPE 'E'.
+        ELSE.
+          CONCATENATE wa_newuser-user_name sy-datum sy-timlo INTO wa_r-exam_id.
+          CALL SCREEN 0004.
+        ENDIF.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
